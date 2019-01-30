@@ -1,1 +1,5 @@
 flask
+flask_sqlalchemy
+uuid
+werkzeug
+sqlalchemy_jsonfield
