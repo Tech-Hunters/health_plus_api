@@ -6,29 +6,27 @@ import time, datetime
 import jwt
 from functools import wraps
 import sqlalchemy_jsonfield
+from flask_cors import CORS
 
 current_milli_time = lambda: int(round(time.time() * 1000))
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "secretkey"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqldb://root:3071Thet@localhost:3306/health_plus'
+CORS(app)
 
 db = SQLAlchemy(app)
 
 class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
     user_name = db.Column(db.String(50))
-    user_password = db.Column(db.String(255))
     user_email = db.Column(db.String(50))
-    user_phno = db.Column(db.String(50))
     user_image = db.Column(db.String(255))
-    login_type = db.Column(db.String(50))
 
 class HealthTip(db.Model):
     ht_id = db.Column(db.Integer, primary_key=True)
     ht_title = db.Column(db.String(255))
     ht_details = db.Column(db.Text())
     ht_image = db.Column(db.String(255))
-    ht_time = db.Column(db.DateTime(timezone=True))
 
 
 class Doctor(db.Model):
@@ -102,9 +100,7 @@ def get_all_users():
 		user_data['id'] = user.user_id
 		user_data['name'] = user.user_name
 		user_data['email'] = user.user_email
-		user_data['phno'] = user.user_phno
 		user_data['image'] = user.user_image
-		user_data['login_type'] = user.login_type
 		output.append(user_data)
 
 	return jsonify({'users': output})
@@ -119,22 +115,17 @@ def get_one_user(user_id):
 	user_data['id'] = user.user_id
 	user_data['name'] = user.user_name
 	user_data['email'] = user.user_email
-	user_data['phno'] = user.user_phno
 	user_data['image'] = user.user_image
-	user_data['login_type'] = user.login_type
 	return jsonify({'user': user_data})
 
 @app.route('/user', methods=['POST'])
 def create_user():
 	data = request.get_json()
-	hashed_password = generate_password_hash(data['password'], method='md5')
+	# hashed_password = generate_password_hash(data['password'], method='md5')
 	new_user = User(user_id=str(current_milli_time()), 
 		user_name=data['name'], 
-		user_password=hashed_password, 
 		user_image=data['image'],
-		user_email=data['email'],
-		user_phno=data['phno'],
-		login_type=data['login_type'])
+		user_email=data['email'])
 
 	db.session.add(new_user)
 	db.session.commit()
@@ -155,8 +146,6 @@ def update_user():
 			user.user_image = data[col]
 		elif col=="email":
 			user.user_email = data[col]
-		elif col=="phno":
-			user.user_phno = data[col]
 	db.session.commit()
 
 	return jsonify({'message': 'User has been updated'})
@@ -184,7 +173,6 @@ def get_all_healthtips():
 		health_tip_data['ht_title'] = health_tip.ht_title
 		health_tip_data['ht_details'] = health_tip.ht_details
 		health_tip_data['ht_image'] = health_tip.ht_image
-		health_tip_data['ht_time'] = health_tip.ht_time
 		output.append(health_tip_data)
 
 	return jsonify({'health_tips': output})
@@ -200,7 +188,6 @@ def get_one_health_tip(ht_id):
 	health_tip_data['ht_title'] = health_tip.ht_title
 	health_tip_data['ht_details'] = health_tip.ht_details
 	health_tip_data['ht_image'] = health_tip.ht_image
-	health_tip_data['ht_time'] = health_tip.ht_time
 	return jsonify({'health_tip': health_tip_data})
 
 @app.route('/health_tip', methods=['POST'])
@@ -209,8 +196,7 @@ def create_health_tip():
 	new_health_tip = HealthTip(ht_id=str(current_milli_time()), 
 		ht_title=data['ht_title'], 
 		ht_details=data['ht_details'], 
-		ht_image=data['ht_image'],
-		ht_time=datetime.datetime.now())
+		ht_image=data['ht_image'])
 
 	db.session.add(new_health_tip)
 	db.session.commit()
@@ -231,8 +217,6 @@ def update_health_tip():
 			health_tip.ht_details = data[col]
 		elif col=="ht_image":
 			health_tip.ht_email = data[col]
-		elif col=="ht_time":
-			health_tip.ht_time = data[col]
 	db.session.commit()
 
 	return jsonify({'message': 'HealthTip has been updated'})
